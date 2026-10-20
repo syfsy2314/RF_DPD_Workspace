@@ -1,0 +1,375 @@
+<div id="test2-selfcal-report">
+  <style>
+    #test2-selfcal-report {
+      display: grid;
+      gap: 1.5rem;
+      color: var(--foreground);
+    }
+    #test2-selfcal-report .report-header,
+    #test2-selfcal-report .report-section {
+      display: grid;
+      gap: 0.85rem;
+    }
+    #test2-selfcal-report .report-header h1,
+    #test2-selfcal-report .report-section h2,
+    #test2-selfcal-report .report-section h3,
+    #test2-selfcal-report p {
+      margin: 0;
+    }
+    #test2-selfcal-report .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+    #test2-selfcal-report .step-strip {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 0.35rem;
+      align-items: stretch;
+    }
+    #test2-selfcal-report .step-strip .btn {
+      white-space: normal;
+      min-height: 4.25rem;
+    }
+    #test2-selfcal-report .step-number {
+      display: block;
+      color: var(--muted-foreground);
+    }
+    #test2-selfcal-report .step-detail {
+      display: grid;
+      grid-template-columns: 1.2fr 1.8fr 1.2fr;
+      gap: 0.75rem;
+    }
+    #test2-selfcal-report .detail-group {
+      min-width: 0;
+    }
+    #test2-selfcal-report .detail-label {
+      display: block;
+      margin-bottom: 0.3rem;
+      color: var(--muted-foreground);
+    }
+    #test2-selfcal-report .equation {
+      padding: 0.7rem;
+      background: var(--muted);
+      color: var(--foreground);
+      overflow-wrap: anywhere;
+    }
+    #test2-selfcal-report .boundary {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+      gap: 0.75rem;
+      align-items: stretch;
+    }
+    #test2-selfcal-report .lane {
+      padding: 0.9rem;
+      background: color-mix(in srgb, var(--viz-series-1) 10%, transparent);
+    }
+    #test2-selfcal-report .lane.evaluation {
+      background: color-mix(in srgb, var(--viz-series-2) 10%, transparent);
+    }
+    #test2-selfcal-report .lane-flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      align-items: center;
+      margin-top: 0.5rem;
+    }
+    #test2-selfcal-report .token {
+      padding: 0.3rem 0.5rem;
+      background: var(--card);
+      color: var(--card-foreground);
+      border: 1px solid var(--border);
+    }
+    #test2-selfcal-report .arrow {
+      color: var(--muted-foreground);
+    }
+    #test2-selfcal-report .bar-chart {
+      display: grid;
+      gap: 0.75rem;
+    }
+    #test2-selfcal-report .bar-row {
+      display: grid;
+      grid-template-columns: 9.5rem minmax(0, 1fr) 5rem;
+      gap: 0.6rem;
+      align-items: center;
+    }
+    #test2-selfcal-report .bar-track {
+      height: 1.4rem;
+      background: var(--muted);
+      position: relative;
+    }
+    #test2-selfcal-report .bar-fill {
+      height: 100%;
+      background: var(--viz-series-1);
+    }
+    #test2-selfcal-report .bar-row:nth-child(3) .bar-fill {
+      background: var(--viz-series-2);
+    }
+    #test2-selfcal-report .bar-row:nth-child(4) .bar-fill {
+      background: var(--viz-series-3);
+    }
+    #test2-selfcal-report .bar-value {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    #test2-selfcal-report .axis-note {
+      margin-left: 10.1rem;
+      color: var(--muted-foreground);
+    }
+    #test2-selfcal-report .takeaway {
+      padding-left: 0.75rem;
+      border-left: 3px solid var(--viz-series-1);
+    }
+    #test2-selfcal-report .file-list {
+      display: grid;
+      gap: 0.35rem;
+    }
+    @media (max-width: 640px) {
+      #test2-selfcal-report .summary-grid,
+      #test2-selfcal-report .step-detail,
+      #test2-selfcal-report .boundary {
+        grid-template-columns: 1fr;
+      }
+      #test2-selfcal-report .step-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      #test2-selfcal-report .bar-row {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+      }
+      #test2-selfcal-report .bar-value {
+        text-align: left;
+      }
+      #test2-selfcal-report .axis-note {
+        margin-left: 0;
+      }
+    }
+  </style>
+
+  <header class="report-header">
+    <div class="viz-row">
+      <span class="viz-badge">test2 实验汇报</span>
+      <span class="text-muted">正常非线性工作状态 · 一次外层更新</span>
+    </div>
+    <h1>带限反馈下的单次幅度算子自校准</h1>
+    <p>先由传统覆盖模型得到粗略输出，再用粗略输出训练 501 抽头实对称幅度算子，最后重新运行 MG。真实 <code>y0</code> 只参与结果评价。</p>
+  </header>
+
+  <section class="summary-grid" aria-label="关键结果">
+    <div class="card viz-stat">
+      <span class="text-muted">初始 MG0</span>
+      <span class="viz-stat-value">−35.1758 dB</span>
+      <span>仅使用已知覆盖滤波器 H₂</span>
+    </div>
+    <div class="card viz-stat">
+      <span class="text-muted">一次更新 MG1</span>
+      <span class="viz-stat-value">−37.6634 dB</span>
+      <span>比 MG0 改善 2.4876 dB</span>
+    </div>
+    <div class="card viz-stat">
+      <span class="text-muted">监督参考</span>
+      <span class="viz-stat-value">−37.9307 dB</span>
+      <span>MG1 仅相差 0.2673 dB</span>
+    </div>
+  </section>
+
+  <section class="report-section" aria-labelledby="flow-heading">
+    <h2 id="flow-heading">实验流程</h2>
+    <div class="step-strip" role="group" aria-label="选择流程步骤">
+      <button class="btn btn-primary" type="button" data-step="0" aria-pressed="true"><span class="step-number">01</span>生成反馈</button>
+      <button class="btn btn-ghost" type="button" data-step="1" aria-pressed="false"><span class="step-number">02</span>粗略恢复</button>
+      <button class="btn btn-ghost" type="button" data-step="2" aria-pressed="false"><span class="step-number">03</span>构造 Z</button>
+      <button class="btn btn-ghost" type="button" data-step="3" aria-pressed="false"><span class="step-number">04</span>训练算子</button>
+      <button class="btn btn-ghost" type="button" data-step="4" aria-pressed="false"><span class="step-number">05</span>再次 MG</button>
+      <button class="btn btn-ghost" type="button" data-step="5" aria-pressed="false"><span class="step-number">06</span>离线评价</button>
+    </div>
+    <div class="card step-detail" aria-live="polite">
+      <div class="detail-group">
+        <span class="detail-label">输入</span>
+        <strong id="step-input"></strong>
+      </div>
+      <div class="detail-group">
+        <span class="detail-label" id="step-title"></span>
+        <div class="equation"><code id="step-equation"></code></div>
+        <p class="text-small text-muted" id="step-note"></p>
+      </div>
+      <div class="detail-group">
+        <span class="detail-label">输出</span>
+        <strong id="step-output"></strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="report-section" aria-labelledby="boundary-heading">
+    <h2 id="boundary-heading">数据使用边界</h2>
+    <div class="boundary">
+      <div class="lane">
+        <strong>训练链路：不使用真实 y0</strong>
+        <div class="lane-flow" aria-label="训练链路">
+          <span class="token">x</span><span class="arrow">→</span>
+          <span class="token">H₂ + ybf</span><span class="arrow">→</span>
+          <span class="token">yMG⁽⁰⁾</span><span class="arrow">→</span>
+          <span class="token">训练 hA</span><span class="arrow">→</span>
+          <span class="token">yMG⁽¹⁾</span>
+        </div>
+      </div>
+      <div class="lane evaluation">
+        <strong>评价链路</strong>
+        <div class="lane-flow" aria-label="评价链路">
+          <span class="token">yMG</span><span class="arrow">↔</span>
+          <span class="token">真实 y0</span><span class="arrow">→</span>
+          <span class="token">NMSE / PSD</span>
+        </div>
+      </div>
+    </div>
+    <p class="text-small text-muted">MG 返回的原始恢复信号先用于算子训练；与 y0 的时延和常相位对齐发生在训练完成之后。</p>
+  </section>
+
+  <section class="report-section" aria-labelledby="result-heading">
+    <h2 id="result-heading">恢复结果对比</h2>
+    <div class="bar-chart" role="img" aria-label="MG0、一次自校准 MG1 与监督参考的 NMSE 抑制深度分别为 35.1758、37.6634 和 37.9307 dB">
+      <div class="axis-note text-small">NMSE 抑制深度 |NMSE|（dB，越大越好）</div>
+      <div class="bar-row">
+        <span>MG0 传统覆盖</span>
+        <div class="bar-track"><div class="bar-fill" style="width:87.94%"></div></div>
+        <span class="bar-value">35.1758</span>
+      </div>
+      <div class="bar-row">
+        <span>MG1 自校准</span>
+        <div class="bar-track"><div class="bar-fill" style="width:94.16%"></div></div>
+        <span class="bar-value">37.6634</span>
+      </div>
+      <div class="bar-row">
+        <span>真实 y0 监督</span>
+        <div class="bar-track"><div class="bar-fill" style="width:94.83%"></div></div>
+        <span class="bar-value">37.9307</span>
+      </div>
+    </div>
+    <p class="takeaway"><strong>一次更新有效：</strong>自校准恢复比传统覆盖改善 2.4876 dB，并达到监督参考结果的近邻。</p>
+  </section>
+
+  <section class="report-section" aria-labelledby="settings-heading">
+    <h2 id="settings-heading">实验设置与算子指标</h2>
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead>
+          <tr><th>类别</th><th>参数/指标</th><th class="text-end">数值</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>BLMP</td><td>K / M / s</td><td class="text-end">7 / 5 / 3</td><td>保持现有 MG 接口</td></tr>
+          <tr><td>幅度算子</td><td>R / FIR 长度</td><td class="text-end">250 / 501</td><td>实系数、偶对称</td></tr>
+          <tr><td>岭回归</td><td>η</td><td class="text-end">1×10⁻⁴</td><td>按 Gram 矩阵能量缩放</td></tr>
+          <tr><td>反馈拟合</td><td>有效区 NMSE</td><td class="text-end">−38.7045 dB</td><td>使用 yMG⁽⁰⁾ 构造 Z</td></tr>
+          <tr><td>幅频误差</td><td>RMSE / 最大误差</td><td class="text-end">0.4289 / 1.1776 dB</td><td>−70 至 70 MHz</td></tr>
+          <tr><td>数值稳定性</td><td>条件数 / 系数范数</td><td class="text-end">1.1843×10⁵ / 0.2699</td><td>岭正则化后</td></tr>
+          <tr><td>归一化</td><td>原中心增益 / A(0)</td><td class="text-end">1.0765 / 1</td><td>消除整体尺度歧义</td></tr>
+          <tr><td>结构检查</td><td>对称误差</td><td class="text-end">0</td><td>满足偶对称约束</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="report-section" aria-labelledby="interpretation-heading">
+    <h2 id="interpretation-heading">结果解读</h2>
+    <div class="table-responsive">
+      <table class="table">
+        <tbody>
+          <tr><th>已经验证</th><td>仅使用正常工作状态下的 <code>x</code>、<code>ybf</code> 和已知 <code>h2</code>，一次外层更新即可显著改善全带输出恢复。</td></tr>
+          <tr><th>仍有差距</th><td>自校准幅频 RMSE 为 0.4289 dB，高于真实 y0 监督拟合；粗略恢复误差会传递到算子训练。</td></tr>
+          <tr><th>关键现象</th><td>反馈拟合不必达到监督训练的 −65.6874 dB，也能把最终恢复推近监督参考，说明模型侧幅度形状校正是有效的。</td></tr>
+          <tr><th>下一步</th><td>在保持每轮归一化的前提下测试 3–5 次外层更新，并加入 μ=0.1、0.2、0.3 的阻尼，观察是否继续收敛。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="report-section" aria-labelledby="mapping-heading">
+    <h2 id="mapping-heading">代码与产物对应</h2>
+    <div class="file-list">
+      <code>common/models/feedback/train_symmetric_amplitude_operator.m</code>
+      <span class="text-muted">封装 Z 构造、公共对齐、岭回归、A(0)=1 归一化和 hModel 合成。</span>
+      <code>projects/Alternating Iterations/test2.m</code>
+      <span class="text-muted">组织监督参考、MG0、一次外层自校准、MG1、评价和绘图。</span>
+      <code>projects/Alternating Iterations/results/test2_self_cal_one_iteration_L501.mat</code>
+      <span class="text-muted">保存配置、两轮恢复波形、算子系数、拟合指标和监督参考。</span>
+    </div>
+  </section>
+
+  <script>
+    (() => {
+      const root = document.getElementById('test2-selfcal-report');
+      const steps = [
+        {
+          title: '模拟带限反馈链路',
+          input: '真实 PA 输出 y0',
+          equation: 'ybf = H2{H1{y0}}',
+          output: '原始反馈 ybf',
+          note: 'H1 为约 3.1 dB 波纹的线性相位 FIR；H2 为已知数字覆盖滤波器。'
+        },
+        {
+          title: '传统覆盖得到初始恢复',
+          input: 'x、ybf、h2',
+          equation: 'yMG(0) = MG(x, h2, ybf)',
+          output: '原始 yMG⁽⁰⁾',
+          note: '输出不与真实 y0 对齐，直接进入下一步训练。MG 内部原有两遍更新保持不变。'
+        },
+        {
+          title: '由粗略输出构造对称移位回归矩阵',
+          input: 'yMG⁽⁰⁾、h2',
+          equation: 'Zr = H2{yMG(0)(n−r) + yMG(0)(n+r)}',
+          output: 'Z(yMG⁽⁰⁾)',
+          note: '只将 ybf 整体对齐到 Z 的第一列；不同列之间不单独对齐。'
+        },
+        {
+          title: '岭回归训练幅度算子',
+          input: 'Z、对齐后的 ybf',
+          equation: 'a = (Re{ZᴴZ} + λI)⁻¹ Re{Zᴴybf};  A(0)=1',
+          output: 'hA、hModel=conv(hA,h2)',
+          note: 'R=250、501 抽头、η=10⁻⁴；系数限制为实数且 FIR 偶对称。'
+        },
+        {
+          title: '使用复合模型再次恢复',
+          input: 'x、原始 ybf、hModel',
+          equation: 'yMG(1) = MG(x, hModel, ybf)',
+          output: '原始 yMG⁽¹⁾',
+          note: '估计算子作用于全部带限 BLMP 基函数；全带恢复仍使用未滤波基函数。'
+        },
+        {
+          title: '使用真实输出进行离线评价',
+          input: 'yMG⁽⁰⁾、yMG⁽¹⁾、y0',
+          equation: 'ΔNMSE = NMSEMG1 − NMSEMG0 = −2.4876 dB',
+          output: 'NMSE、PSD、幅频误差',
+          note: 'y0 只在此处用于时延/常相位对齐和指标计算，不参与算子训练。'
+        }
+      ];
+      const buttons = Array.from(root.querySelectorAll('[data-step]'));
+      const title = root.querySelector('#step-title');
+      const input = root.querySelector('#step-input');
+      const equation = root.querySelector('#step-equation');
+      const output = root.querySelector('#step-output');
+      const note = root.querySelector('#step-note');
+
+      function selectStep(index) {
+        const step = steps[index];
+        title.textContent = step.title;
+        input.textContent = step.input;
+        equation.textContent = step.equation;
+        output.textContent = step.output;
+        note.textContent = step.note;
+        buttons.forEach((button, buttonIndex) => {
+          const selected = buttonIndex === index;
+          button.classList.toggle('btn-primary', selected);
+          button.classList.toggle('btn-ghost', !selected);
+          button.setAttribute('aria-pressed', String(selected));
+        });
+      }
+
+      buttons.forEach((button) => {
+        button.addEventListener('click', () => {
+          selectStep(Number(button.dataset.step));
+        });
+      });
+      selectStep(0);
+    })();
+  </script>
+</div>
