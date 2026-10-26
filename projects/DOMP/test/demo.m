@@ -27,8 +27,8 @@ h1 = H1_FIR.Numerator;
 Fs = 1000; 
 Fpass = BW;             
 Fstop = BW+3;              
-Dpass = 0.0057501127785;  
-Dstop = 0.0001;          
+Dpass = 0.0057501127785;
+Dstop = 1e-6;            % 数字域覆盖滤波器，深阻带排除带外泄漏
 dens  = 20;             
 [N, Fo, Ao, W] = firpmord([Fpass, Fstop]/(Fs/2), [1 0], [Dpass, Dstop]);
 b  = firpm(N, Fo, Ao, W, {dens});
@@ -125,12 +125,12 @@ fprintf('NMSE_MG = %.2f dB\n', NESE_MG);
 %% MR
 Kb = 2;
 nb = 0.2;
-a1 = 0.001;
+a1 = 1e-4;
 Lb = get_Lb(H_x,Kb,nb);
 %
 Kg = 20;
 ng = 0.2;
-a2 = 0.00001;
+a2 = 1e-7;
 g = 1000;
 G = H_x(1:g,:);
 Lg = get_Lg(G,Kg,ng);
