@@ -40,7 +40,7 @@ load E:\测试\2026.6.10\test1\x_v0.6_v1.mat;
 load E:\测试\2026.6.10\test1\y0_v0.6_v1.mat;
 gain_rmspa = rms(y0)/rms(x);
 N = length(x);
-%% OMUX模拟滤波
+%% 模拟带限滤波器
 y_f = H1_FIR(y0);
 [y_f,x,~] = align_circular_signal(y_f,x);
 % FIR滤波
