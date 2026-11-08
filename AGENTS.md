@@ -31,6 +31,8 @@ Use four-space indentation, one statement per line, and spaces around binary ope
 
 Add MATLAB unit tests under each project's `tests/` directory, such as `projects/Alternating Iterations/tests/`. Name files `test_<subject>.m` and test methods by behavior, such as `test_identicalSignalsHaveZeroNMSE`. Use deterministic inputs and fixed random seeds. Cover nominal behavior, dimensions, complex-valued signals, and invalid arguments. Keep generated results in the same project's `results/` directory, and do not overwrite committed `.mat` fixtures during tests.
 
+测试脚本统一放在各自项目下的 `tests/` 文件夹（含 `test_*.m` 单元测试及 `diag_*.m`、`verify_*.m` 诊断/验证脚本），不要散落在项目根目录。
+
 ## Commit & Pull Request Guidelines
 
 No commit history is currently available, so use concise imperative messages, preferably scoped: `feat(ld-pls): add regularization sweep` or `fix(metrics): handle zero reference power`. Keep commits focused. Pull requests should describe the algorithmic change, MATLAB release and required toolboxes, data provenance, validation commands, and numerical before/after results. Include plots when signal behavior changes, but exclude generated figures and large datasets unless explicitly required.
