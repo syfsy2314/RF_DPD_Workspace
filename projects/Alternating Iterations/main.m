@@ -1,128 +1,99 @@
-%% 用线性响应估计复增益
-%% 前置处理
+%% 幅度自校准：通带纹波扫描（0.1 -> 2 dB，步进 0.2 dB）
+% 每个纹波点依次运行三组对照：
+%   Ref      —— 完美已知复合滤波器 conv(h1,h2) 的性能上限
+%   Initial  —— 传统覆盖（仅 h2，无视幅度失配），即未校准基线
+%   Iteration—— 一次结构化幅度自校准后的恢复
+% 输出：逐点打印 + 汇总表 + NMSE-纹波曲线
+%%
 clear;
 close all;
 fs = 1000;
 nfft = 1024;
-window=hann(nfft);
-%% 第 一 个IIR滤波器 OMUX
-% Fpass = 75;    % Passband Frequency
-% Fstop = 85;    % Stopband Frequency
-% Apass = 0.01;     % Passband Ripple (dB)
-% Astop = 60;    % Stopband Attenuation (dB)
-% Fs    = 1000;  % Sampling Frequency
-% h = fdesign.lowpass('fp,fst,ap,ast', Fpass, Fstop, Apass, Astop, Fs);
-% Hd_OMUX = design(h, 'ellip', ...
-%     'MatchExactly', 'both', ...
-%     'SystemObject', true);
-%% 第一个FIR滤波器
-%UNTITLED 返回离散时间滤波器对象。
-BW = 70;
-Fs = 1000;  % Sampling Frequency
-Fpass = BW+5;              % Passband Frequency
-Fstop = BW+10;              % Stopband Frequency
-% Dpass = 0.57501127785;  % Passband Ripple
-Rp_dB = 3.1;        % 通带波纹，单位 dB 大概是0.17 %% 3dB有bug 3.1都行
-Dpass = (10^(Rp_dB/20) - 1) / (10^(Rp_dB/20) + 1);
-Dstop = 0.0001;          % Stopband Attenuation
-dens  = 20;              % Density Factor
-[N, Fo, Ao, W] = firpmord([Fpass, Fstop]/(Fs/2), [1 0], [Dpass, Dstop]);
-b  = firpm(N, Fo, Ao, W, {dens});
-H1_FIR = dsp.FIRFilter( ...
-    'Numerator', b);
-h1 = H1_FIR.Numerator;
-% [EOF]
-Hd_OMUX = H1_FIR;
-%% 第二个FIR滤波器
-%UNTITLED 返回离散时间滤波器对象。
-Fs = 1000;  % Sampling Frequency
-Fpass = BW;              % Passband Frequency
-Fstop = BW+3;              % Stopband Frequency
-Dpass = 0.0057501127785;  % Passband Ripple
-Dstop = 0.0001;          % Stopband Attenuation
-dens  = 20;              % Density Factor
-[N, Fo, Ao, W] = firpmord([Fpass, Fstop]/(Fs/2), [1 0], [Dpass, Dstop]);
-b  = firpm(N, Fo, Ao, W, {dens});
-H2_FIR = dsp.FIRFilter( ...
-    'Numerator', b);
-h2 =  H2_FIR.Numerator;
-%%
-load C:\Users\admin\Desktop\测试\第四次\x.mat;
-load C:\Users\admin\Desktop\测试\第四次\y0.mat;
+window = hann(nfft);
+%% 扫描设置
+Rp_list = 0.1:0.2:2;             % H1 通带纹波扫描（dB）
+nRp = numel(Rp_list);
+NMSE_Ref  = zeros(nRp, 1);
+NMSE_Init = zeros(nRp, 1);
+NMSE_Iter = zeros(nRp, 1);
+%% 固定参数
+BW = 80;
+Fs = 1000;
+Dpass2 = 0.0057501127785;        % H2 通带波纹（数字域，固定）
+Dstop2 = 1e-4;                 % H2 阻带（数字域，固定）
+dens = 20;
+K = 7; M = 5;
+S = 0.3;
+lamda = 1;
+iteration_count = 1;
+operator_R = 250;
+operator_eta = 1e-4;
+%% 数据（与纹波无关，只加载一次）
+load D:\RF_DPD_Workspace\datasets\测试\2026.6.10\test1\x_v0.6_v1.mat;
+load D:\RF_DPD_Workspace\datasets\测试\2026.6.10\test1\y0_v0.6_v1.mat;
 gain_rmspa = rms(y0)/rms(x);
-N = length(x);
-%% ======================OMUX模拟滤波========================
-y_f = Hd_OMUX(y0);
-% 时间对齐
-[y_f,x,~] = align_circular_signal(y_f,x);
-h = h2;
-y_bf = H2_FIR(y_f);
-%% ======================初始化=============================
-K = 7;
-M = 5;
-L = K*(M+1);
-H_x = geth_even_BLMP(x,K,M,h);%中频0 带限基函数
-X = geth_even_1d(x,K,M);
-%% =======================对照组=============================
-s = 3;
-% MG
-[y_MG,gain_rmsMG] = get_MG(K,M,s,x,h,y_bf);
-NMSE_MG = get_NMSE(y_MG, y0);
-%% =====================分离并计算线性响应=================
-Len = 1;
-x_lin = H_x(:,Len);
-X_nl_raw = H_x(:,(Len+1):end);
-w_lin = (x_lin' * x_lin) \ (x_lin' * y_bf);
-%计算线性响应
-y1 = x_lin * w_lin;
-gain_rmsL = rms(y1)/rms(x);
-% 
-figure(2);
-xlabel('频率偏移 (MHz)');
-ylabel('功率谱密度 (dBm/Hz)');
-[p1, f1] = pwelch(y0/gain_rmspa, window, nfft/2, nfft ,fs);
-plot(f1 - 1/2 * fs, 10 * log10(fftshift(p1*100)), 'r-')%红色
-hold on;
-[p1, f1] = pwelch(x, window, nfft/2, nfft ,fs);
-plot(f1 - 1/2 * fs, 10 * log10(fftshift(p1*100)), 'b-')%红色
-hold on;
-[p4, f4] = pwelch(y1/gain_rmsL, window, nfft/2, nfft ,fs);
-plot(f4 - 1/2 * fs, 10 * log10(fftshift(p4*100)), 'g-')
-hold on;
-legend('PA输出信号','输入信号','线性');
+%% 纹波扫描（H1 固定阶数：平坦低通 × 独立通带余弦波纹）
+% 平坦低通：一次设计、阶数固定；通带纹波 0.01 dB，远小于最小扫描 Rp（0.1 dB）
+Dpass_flat = (10^(0.01/20) - 1) / (10^(0.01/20) + 1);
+[N1, Fo, Ao, W] = firpmord([BW+5, BW+10]/(Fs/2), [1 0], [Dpass_flat, 1e-4]);
+h_flat = firpm(N1, Fo, Ao, W, {dens});
+nRipple = 5;                                    % 通带内波纹周期数（固定）
+tau_ripple = round(nRipple * Fs / (BW+5));      % 波纹周期对应的样本间隔
+Rp_actual = zeros(nRp, 1);      % 实测通带纹波（dB）
+for iRp = 1:nRp
+    Rp_dB = Rp_list(iRp);
+    % ---- H1 = h_flat ⊛ h_ripple（频域幅度相乘 ⟷ 时域卷积） ----
+    % 余弦幅度波纹 1+ε·cos(2πf·τ/Fs) 的精确时域表示：3 抽头零相位 FIR [ε/2, 1, ε/2]，
+    % 无逼近误差；h_ripple 群延迟为常数 τ，与 h_flat 一起被对齐吸收
+    epsilon = (10^(Rp_dB/20) - 1) / (10^(Rp_dB/20) + 1);   % 波纹线性幅度，峰峰 = Rp_dB
+    h_ripple = [epsilon/2, zeros(1, tau_ripple-1), 1, zeros(1, tau_ripple-1), epsilon/2];
+    h1 = conv(h_flat, h_ripple);
+    H1_FIR = dsp.FIRFilter('Numerator', h1);
+    % 实测通带纹波
+    [Hmag, fgrid] = freqz(h1, 1, 4096, Fs);
+    passband = fgrid <= (BW + 5);
+    Rp_actual(iRp) = 20 * log10(max(abs(Hmag(passband))) / min(abs(Hmag(passband))));
+    % ---- H2：数字覆盖滤波器（固定） ----
+    [N2, Fo, Ao, W] = firpmord([BW, BW+3]/(Fs/2), [1 0], [Dpass2, Dstop2]);
+    H2_FIR = dsp.FIRFilter('Numerator', firpm(N2, Fo, Ao, W, {dens}));
+    h2 = H2_FIR.Numerator;
+    % ---- 观测链路（对齐结果存独立变量，避免污染原始 x） ----
+    y_f = H1_FIR(y0);
+    [y_f, x_al, ~] = align_circular_signal(y_f, x);
+    y_bf = H2_FIR(y_f);
+    X = geth_even_1d(x_al, K, M);
+    % ---- Ref：完美已知复合滤波器（性能上限） ----
+    h_Ref = conv(h1, h2);
+    linear_reference_Ref = filter(h_Ref, 1, x_al);
+    [y_bf_Ref, ~, ~] = align_circular_signal(y_bf, linear_reference_Ref);
+    [y_Ref_raw, ~] = get_OPLS(K, M, X, x_al, h_Ref, y_bf_Ref, S, lamda);
+    [y_Ref, ~, ~] = align_circular_signal(y_Ref_raw, y0);
+    NMSE_Ref(iRp) = get_NMSE(y_Ref, y0);
+    % ---- Initial：传统覆盖（迭代 0 次） ----
+    [y_Initial, gain_rms_Initial] = get_OPLS(K, M, X, x_al, h2, y_bf, S, lamda);
+    % ---- 一次结构化幅度自校准 ----
+    [y_IterationResults, ~] = run_amplitude_alternating_iterations( ...
+        iteration_count, y_Initial, gain_rms_Initial, y_bf, h2, ...
+        x_al, K, M, X, S, lamda, operator_R, operator_eta);
+    NMSE_Init(iRp) = get_NMSE(y_Initial, y0);
+    NMSE_Iter(iRp) = get_NMSE(y_IterationResults(:, end), y0);
+    fprintf('纹波 标称%4.2f/实际%5.3f dB: Ref %7.2f | Initial %7.2f | 自校准 %7.2f dB\n', ...
+        Rp_dB, Rp_actual(iRp), NMSE_Ref(iRp), NMSE_Init(iRp), NMSE_Iter(iRp));
+end
+%% 汇总表
+fprintf('\n================ 纹波扫描汇总 ================\n');
+fprintf('%8s %8s %12s %14s %14s\n', '标称(dB)', '实际(dB)', '参考NMSE', '首次估计NMSE', '自校准NMSE');
+for iRp = 1:nRp
+    fprintf('%8.2f %8.3f %12.2f %14.2f %14.2f\n', ...
+        Rp_list(iRp), Rp_actual(iRp), NMSE_Ref(iRp), NMSE_Init(iRp), NMSE_Iter(iRp));
+end
+%% 曲线（横轴用标称纹波，阶数固定后连续无跳变）
+figure;
+plot(Rp_list, NMSE_Ref, 'b-o', 'LineWidth', 1.2); hold on;
+plot(Rp_list, NMSE_Init, 'g-s', 'LineWidth', 1.2);
+plot(Rp_list, NMSE_Iter, 'm-^', 'LineWidth', 1.2);
+xlabel('H1 通带纹波 (dB)');
+ylabel('NMSE (dB)');
+legend('Ref 完美已知滤波器', 'Initial 传统覆盖', '一次自校准', 'Location', 'best');
+title('幅度自校准性能随反馈链路纹波的变化');
 grid on;
-%% =====================估计复增益==========================================
-% x_f = H1_FIR(x);
-% [x_f,x,~] = align_circular_signal(x_f,x);
-% g = x./x_f;
-%% =====================线性响应估计复增益================================
-[y1,x,~] = align_circular_signal(y1,x);
-g = x./y1;
-%% =====================复增益FIR滤波============================================
-y_bf = H2_FIR(y_f .* g);
-%% =====================信号恢复 第二轮迭代===========================================
-s = 3;
-% MG
-[y_MG_propose,gain_rmsMG_propose] = get_MG(K,M,s,x,h,y_bf);
-NMSE_propose = get_NMSE(y_MG_propose, y0);
-%% =====================展示结果=======================================
-figure(1);
-xlabel('频率偏移 (MHz)');
-ylabel('功率谱密度 (dBm/Hz)');
-[p1, f1] = pwelch(y0/gain_rmspa, window, nfft/2, nfft ,fs);
-plot(f1 - 1/2 * fs, 10 * log10(fftshift(p1*100)), 'r-')%红色
-hold on;
-[p4, f4] = pwelch(y_MG_propose/gain_rmsMG_propose, window, nfft/2, nfft ,fs);
-plot(f4 - 1/2 * fs, 10 * log10(fftshift(p4*100)), 'b-')
-hold on;
-[p4, f4] = pwelch(y_MG/gain_rmsMG, window, nfft/2, nfft ,fs);
-plot(f4 - 1/2 * fs, 10 * log10(fftshift(p4*100)), 'g-')
-hold on;
-legend('PA输出信号','MG-propose','MG');
-grid on;
-%%
-S = 0.1;
-lamda = 0.01;
-[y_OPLS,gain_rmsOPLS] = get_OPLS(K,M,X,x,h,y_bf,S,lamda);
-fprintf('第一次计算的NMSE = %.2f dB\n',get_NMSE(y_OPLS,y0));
-fprintf('===========================================================\n');
