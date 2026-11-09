@@ -4,7 +4,7 @@ function verify_iir_dpd()
 % 流程（对应 7 个步骤）：
 %   1 导入数据        x / y0（输入 / 无 DPD 的 PA 输出）
 %   2 生成 IIR 椭圆低通滤波器（带宽 80 MHz）
-%   3 滤波            y0 -> y_f（带限观测，模拟采集路径，循环卷积）
+%   3 滤波            y0 -> y_f（带限观测，循环平稳稳态，循环卷积）
 %   4 提取 FIR 系数   用 FIR 逼近 IIR，产出滤波器系数 h
 %   5 用 BLMP 训练 PA 模型
 %   6 估计全带输出
@@ -27,12 +27,12 @@ Ws = (BW + 3) / (Fs/2);         % 阻带边缘（归一化）
 [b, a] = ellip(n, Rp, Rs, Wn, 'low');
 fprintf('IIR 椭圆低通：阶数 n=%d, 带宽 BW=%d MHz\n', n, BW);
 
-%% 3. 滤波：y0 对齐到 x 后过椭圆滤波器，得到带限观测 y_f（循环卷积）
+%% 3. 滤波：信号循环平稳播放、采集中间一段（稳态），用循环卷积
 %[y0a, ~, ~] = align_circular_signal(y0, x);
 y0a = y0;
 y_f = circfilter(y0a, b, a);
 
-%% 4. 提取 FIR 系数（用 FIR 逼近 IIR，基于 F_matrix 循环卷积矩阵）
+%% 4. 提取 FIR 系数（用 FIR 逼近 IIR，循环卷积矩阵）
 % 最终产出 FIR 滤波器系数 h（脉冲响应），用有限阶 FIR 逼近 IIR。
 % 扫描 FIR 长度 L，按重构 NMSE 选最优。
 L_list = [64 128 256 512 1024 2048];
@@ -63,8 +63,7 @@ legend('y (滤波器输入 y0a)', 'y_f (IIR 真值)', 'y_f_{hat} (FIR 逼近)');
 title('FIR 逼近 IIR 提取验证');
 grid on;
 %% 5. 用 BLMP 训练 PA 模型
-% BLMP = 全带 MP 基函数过反馈 FIR 滤波器（此处即提取的 FIR h）。
-% circfilter(X,h,1) 等价于 geth_even_BLMP(x,K,M,h) 的循环卷积版。
+% geth_even_BLMP 内部用 filter（线性卷积）；按你的要求这里保持不动。
 K = 7; M = 5;                   % 非线性阶数 / 记忆深度
 y_full = get_MG(K, M, 3, x, h, y_f); 
 %% 6. 估计全带输出
@@ -84,23 +83,23 @@ grid on;
 end
 
 function h = extract_fir_coeff(x, y_f, L)
-%EXTRACT_FIR_COEFF 基于 F_matrix 的循环卷积矩阵提取 FIR 系数（脉冲响应）。
+%EXTRACT_FIR_COEFF 循环卷积矩阵提取 FIR 系数（脉冲响应），与稳态观测一致。
 % 用有限阶 FIR 逼近 IIR：y_f ≈ 循环卷积(x, h)，h 为 L 阶 FIR 系数。
-% C(·) 由 F_matrix 的 F + [S;zeros] 得到（线性卷积 + 循环边界修正）。
+% 卷积矩阵第 k 列 = circshift(x, k)（循环移位，x(-1)=x(N)）。
     N = numel(x);
-    [Fx, Sx] = F_matrix(x, L);
-    Cx = Fx + [Sx; zeros(N - (L - 1), L)];
+    Cx = zeros(N, L);
+    for k = 0:L-1
+        Cx(:, k+1) = circshift(x, k);
+    end
     % 带限信号下卷积矩阵病态，加小 ridge 正则化稳定数值，避免 NaN
     lambda = 1e-6 * norm(Cx, 'fro')^2 / size(Cx, 2);
     h = (Cx' * Cx + lambda * eye(L)) \ (Cx' * y_f);
 end
 
 function y = circfilter(x, b, a)
-%CIRCFILTER 循环卷积滤波：Y(f) = H(f)·X(f)，无瞬态（循环信号 y(-1)=y(N)）。
+%CIRCFILTER 循环卷积滤波：Y(f) = H(f)·X(f)，对应循环平稳信号的稳态响应。
 % 对矩阵按列滤波；FIR 时 a=1。
     N = size(x, 1);
     H = freqz(b, a, N, 'whole');
     y = ifft(fft(x) .* H);
 end
-
-
