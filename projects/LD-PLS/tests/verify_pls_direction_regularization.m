@@ -105,8 +105,11 @@ for ib = 1:nBandwidths
 
         if im == 1
             for checkO = checkOList
-                reference = get_LD_PLS(K, M, X(train, :), x(train), ...
-                    h2, y_bf(train), checkO / (K * (M + 1)), lambda);
+                % 正式 get_LD_PLS 已默认使用 mu=1；这里显式复现历史无惩罚基线。
+                [referenceH, ~] = get_energy_regularized_LD_PLS( ...
+                    X(train, :), H_x(train, :), y_bf(train), ...
+                    lambda, 0, 0, inf, checkO);
+                reference = X(train, :) * referenceH;
                 difference = norm( ...
                     yReconstructed(train, checkO) - reference) / norm(reference);
                 baselineDifference(ib) = max(baselineDifference(ib), difference);

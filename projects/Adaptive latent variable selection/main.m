@@ -1,4 +1,4 @@
-%% 测试自适应停止PLS
+%% 测试全带宽能量惩罚的自适应停止 LD-PLS
 %%
 clear;
 close all;
@@ -36,8 +36,13 @@ H2_FIR = dsp.FIRFilter( ...
     'Numerator', b);
 h2 =  H2_FIR.Numerator;
 %%
-load C:\Users\admin\Desktop\测试\第四次\x.mat;
-load C:\Users\admin\Desktop\测试\2026.5.28\test1\y0.mat;
+projectDir = fileparts(mfilename('fullpath'));
+workspaceDir = fileparts(fileparts(projectDir));
+dataDir = fullfile(workspaceDir, 'datasets', '测试', '第四次');
+dataX = load(fullfile(dataDir, 'x.mat'), 'x');
+dataY = load(fullfile(dataDir, 'y0.mat'), 'y0');
+x = dataX.x;
+y0 = dataY.y0;
 gain_rmspa = rms(y0)/rms(x);
 %%
 % OMUX模拟滤波
@@ -54,6 +59,16 @@ M = 5;
 L = K*(M+1);
 H_x = geth_even_BLMP(x,K,M,h);%中频0 带限基函数
 %===========================================
+X = geth_even_1d(x,K,M);
+lamda = 1;
+T_delta = 0;
+kappa_G_max = 10^4.5;
+[y_OPLS,gain_rmsOPLS,A] = get_adaptive_LD_PLS( ...
+    K,M,X,x,h,y_bf,lamda,T_delta,kappa_G_max);
+fprintf('当前带宽为 %d MHz，自适应潜变量数 A = %d\n', BW, A);
+
+% 以下为原手写无惩罚 PLS 流程，仅作历史对照，不参与运行。
+%{
 %% 提取线性分量并作投影
 Len = 1;
 x_lin = H_x(:,Len);
@@ -216,11 +231,12 @@ X_res = X(:,(Len+1):end) - X(:,Len) * proj_coeff;
 % 恢复
 y_OPLS = X_res*B +  X(:,Len)*w_lin;
 gain_rmsOPLS = rms(y_OPLS)/rms(x);
+%}
 %%
 S = 0.25;
 lamda = 1;
 [y_LD_PLS_ref,gain_rms_LD_PLS_ref] = get_LD_PLS(K,M,X,x,h,y_bf,S,lamda);
 NESE_LD_PLS_ref = get_NMSE(y_LD_PLS_ref,y0);
-fprintf('最优潜变量数 A_ref = %d\n', round(S * 41));
+fprintf('固定潜变量数 O_ref = %d\n', round(S * K * (M + 1)));
 %%
 NESE_LD_PLS = get_NMSE(y_OPLS,y0);

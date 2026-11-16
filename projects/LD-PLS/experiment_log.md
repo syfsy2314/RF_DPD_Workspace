@@ -2,13 +2,13 @@
 
 ## 函数接口
 
-固定潜变量数函数现名为 `get_LD_PLS`；仓库中的调用点同步更新。该函数仍以比例 `S` 决定 `O = round(S * K * (M + 1))`。
+固定潜变量数函数现名为 `get_LD_PLS`；仓库中的调用点同步更新。该函数仍以比例 `S` 决定 `O = round(S * K * (M + 1))`，但方向现固定采用全带宽能量惩罚 `μ=1`。
 
-新增 `get_adaptive_LD_PLS(K, M, X, x, h, y_bf, lambda, T_delta, kappa_G_max)`，返回 `[y_LD_PLS, gain_rms, O]`。它沿用原始 LD-PLS 方向，不使用全带宽能量惩罚。`O` 由停止条件确定，最大值为非线性基函数列数；`T_delta=0` 关闭边际收益条件，条件数超限仍会停止。当前候选潜变量被拒绝时不会计入 `O`，第一个潜变量始终保留。
+`get_adaptive_LD_PLS(K, M, X, x, h, y_bf, lambda, T_delta, kappa_G_max)` 返回 `[y_LD_PLS, gain_rms, O]`，现也固定采用 `μ=1` 的惩罚方向。`O` 由停止条件确定，最大值为非线性基函数列数；`T_delta=0` 关闭边际收益条件，条件数超限仍会停止。当前候选潜变量被拒绝时不会计入 `O`，第一个潜变量始终保留。两种正式入口共用 `get_energy_regularized_LD_PLS`，原无惩罚实现留在两个入口的注释块中；历史对照脚本显式使用共用函数的 `μ=0`，避免改变先前实验的基线。`LD-PLS/main.m` 已切换到自适应惩罚版本，默认 `T_delta=0`、`kappa_G_max=10^4.5`，并从项目 `data/` 读取输入。该入口在现有数据上运行得到 `O=10`、全带宽 NMSE `-38.11 dB`。
 
 ## 自适应停止准则（2026-11-16）
 
-数据：`data/x.mat` 和 `data/y0.mat`。模拟 H1+H2 链路，带宽为 80、50、30 MHz；前 60% 用于拟合，随后 20% 选择参数，末尾 20% 仅用于测试。模型参数为 K=7、M=5、岭系数 10，最多提取 21 个潜变量。比较脚本见 `tests/verify_stop_logic_comparison.m` 和 `../Adaptive latent variable selection/tests/verify_adaptive_stop_sweep.m`。
+数据：`data/x.mat` 和 `data/y0.mat`。模拟 H1+H2 链路，带宽为 80、50、30 MHz；前 60% 用于拟合，随后 20% 选择参数，末尾 20% 仅用于测试。模型参数为 K=7、M=5、岭系数 10，最多提取 21 个潜变量。比较脚本见 `../Adaptive latent variable selection/tests/verify_stop_logic_comparison.m` 和 `../Adaptive latent variable selection/tests/verify_adaptive_stop_sweep.m`。
 
 停止时拒绝当前候选潜变量，至少保留一个。分别比较 `小增益 AND 高条件数` 与 `小增益 OR 高条件数`。原阈值 `T_delta=9e-4`、`kappa_G_max=1e3` 下，OR 停得过早。分别在验证集上选择阈值后，两种逻辑的全带宽能量惩罚模型在三个带宽上的测试 NMSE 基本相同。选择较简单的 OR 逻辑，并设 `T_delta=0` 关闭增益条件，此时只由条件数触发停止。
 
@@ -17,9 +17,13 @@
 | 原始 LD-PLS | `1e4` | 10 / -38.98 dB | 7 / -36.75 dB | 8 / -35.60 dB |
 | 全带宽能量惩罚，验证集选择固定 μ | `10^4.5` | 12 / -39.94 dB | 9 / -38.92 dB | 8 / -36.27 dB |
 
-全带宽能量惩罚模型对应的 μ 为 0.001、0.1、0.1。上述阈值由这三组带宽的验证段选择，不能视为其他数据或带宽上的通用常数。`Adaptive latent variable selection/main.m` 使用原始 LD-PLS，因此设 `kappa_G_max=1e4`；其外部桌面数据文件在当前环境不存在，尚未直接运行该入口的 42 MHz 实验。
+全带宽能量惩罚模型对应的 μ 为 0.001、0.1、0.1。上述阈值由这三组带宽的验证段选择，不能视为其他数据或带宽上的通用常数。`Adaptive latent variable selection/main.m` 的历史手写无惩罚流程已改为注释，现调用正式有惩罚自适应入口，并读取 `datasets/测试/第四次` 的成对数据；后面的固定潜变量数参考同样使用有惩罚方向。该入口的 42 MHz 实验运行得到 `A=9`、全带宽 NMSE `-37.29 dB`。
 
 复现实验：从仓库根目录运行 `matlab -batch "startup; verify_adaptive_stop_sweep"`，或运行 `matlab -batch "startup; verify_stop_logic_comparison"`。
+
+修正后的 LD-PLS 与 DOMP 的直接比较入口为 `tests/verify_ld_pls_vs_domp.m`，运行 `matlab -batch "startup; verify_ld_pls_vs_domp"`。脚本仿照 `main.m` 展开数据导入、H1+H2 滤波、建模、指标和功率谱绘图；比较的是全带宽能量惩罚方向加自适应潜变量选择的 LD-PLS 与 DOMP。两者都在前 60% 拟合、末尾 20% 评估，均重建全带宽 PA 输出；中间 20% 用于 DOMP 选阶。此前逐带宽扫描 μ 的 LD-PLS 测试 NMSE 在 80/50/30 MHz 分别为 -39.94/-38.92/-36.27 dB，DOMP 分别为 -39.71/-38.00/-36.38 dB。
+
+为减少部署时调参，直接比较入口改为固定 `μ=1`，仅 DOMP 在验证段选阶；LD-PLS 仍按 `T_delta=0`、`kappa_G_max=10^4.5` 自适应停止。80/50/30 MHz 的 LD-PLS 潜变量数为 11/10/8，测试 NMSE 为 -39.82/-38.84/-36.27 dB。相对于上面逐带宽扫描 μ 的结果，前两组分别低 0.12 和 0.08 dB，30 MHz 持平。固定值的效果只由当前数据验证，不能据此断言跨数据集最优。
 
 ## 提取方向的自适应全带宽惩罚（2026-11-16）
 
@@ -34,3 +38,14 @@
 平方根变化在三个带宽上与固定 μ 基本持平，50 MHz 有约 0.07 dB 改善；线性变化在 50 MHz 改善约 0.20 dB，但 30 MHz 下降约 0.23 dB。若强制跨带宽共用一个 α 和 p，验证集选择 `alpha=0.001, p=1`，测试 NMSE 为 -39.92、-39.12、-35.69 dB，30 MHz 的下降更明显。当前自适应公式没有稳定超越固定 μ，因此保留为实验脚本，尚不替换正式方法。后两种变化方式是在观察同一测试段后继续探索的，确认收益需要新的独立数据。
 
 复现：`matlab -batch "startup; verify_adaptive_direction_penalty"`。
+
+## 固定全带宽惩罚的多条件对照（2026-11-16）
+
+脚本：`tests/verify_energy_penalty_across_conditions.m`；从仓库根目录运行 `matlab -batch "startup; verify_energy_penalty_across_conditions"`。使用 `datasets/测试/第四次`、`第五次`、`第七次` 三组 `x.mat`/`y0.mat`；每组模拟 H1+H2 的 80、65、50、40、30 MHz 五种带宽，分别以前 30% 和前 60% 训练，最后 20% 测试，共 30 个条件。其余参数固定为 `K=7`、`M=5`、`lambda=10`、`T_delta=0`、最大 21 个潜变量。每个条件使用同一训练段拟合 `μ=0` 和 `μ=1`，不扫描 μ；潜变量数由各自得分矩阵的条件数决定。脚本给出逐条件表格和测试 NMSE 差值热图；差值定义为 `NMSE(μ=0)-NMSE(μ=1)`，正值表示添加惩罚更好。
+
+| 无惩罚版条件数上限 | `μ=1` 更好的条件数 | 平均改善 | 中位数改善 | 最差差值 |
+| --- | ---: | ---: | ---: | ---: |
+| 与惩罚版相同，`10^4.5` | 29/30 | 1.58 dB | 1.37 dB | -0.03 dB |
+| 原 LD-PLS 使用的 `10^4` | 27/30 | 1.10 dB | 0.96 dB | -0.42 dB |
+
+惩罚版始终使用 `kappa_G_max=10^4.5`。相对原阈值无惩罚基线的 3 个反例为第五次 40 MHz、训练 60%（-0.42 dB），第七次 40 MHz、训练 30%（-0.32 dB）和训练 60%（-0.33 dB）。第四次与第五次的输入 `x.mat` 文件完全相同、输出 `y0.mat` 不同；不同带宽和训练比例也来自同一段原始采集，因此 30 个条件并非 30 次独立测量。这些结果支持当前数据上固定 `μ=1` 的优势，但不足以断言任意数据与带宽都占优。训练 NMSE 也常同步改善，所以测试增益不能全部归因于抑制过拟合。项目 `get_NMSE` 对参考和预测信号分别做均方根归一化，本节比较不反映增益误差。

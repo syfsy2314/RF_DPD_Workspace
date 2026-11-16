@@ -36,8 +36,11 @@ H2_FIR = dsp.FIRFilter( ...
     'Numerator', b);
 h2 =  H2_FIR.Numerator;
 %% 导入数据
-load E:\测试\2026.6.10\test1\x_v0.6_v1.mat;
-load E:\测试\2026.6.10\test1\y0_v0.6_v1.mat;
+projectDir = fileparts(mfilename('fullpath'));
+dataX = load(fullfile(projectDir, 'data', 'x.mat'), 'x');
+dataY = load(fullfile(projectDir, 'data', 'y0.mat'), 'y0');
+x = dataX.x;
+y0 = dataY.y0;
 gain_rmspa = rms(y0)/rms(x);
 N = length(x);
 %% 模拟带限滤波器
@@ -88,10 +91,13 @@ gain_rmsMR = rms(y_MR)/rms(x);
 [y_SBL,gain_rmsSBL] = get_SBL(K,M,X,H_x,x,y_bf,3);
 fprintf('SBL计算完成\n===================================================\n');
 %%
-S = 0.3;
 lamda = 10;
-[y_LD_PLS,gain_rmsLD_PLS] = get_LD_PLS(K,M,X,x,h,y_bf,S,lamda);
-fprintf('LD-PLS计算完成\n===================================================\n');
+T_delta = 0;
+kappa_G_max = 10^4.5;
+[y_LD_PLS,gain_rmsLD_PLS,O] = get_adaptive_LD_PLS( ...
+    K,M,X,x,h,y_bf,lamda,T_delta,kappa_G_max);
+fprintf('全带宽能量惩罚 LD-PLS 计算完成，O=%d\n===================================================\n', O);
+% 固定潜变量数时可设 S=0.3 并调用 get_LD_PLS(K,M,X,x,h,y_bf,S,lamda)。
 % %% 第二次
 % hh = ls_filter_est(y_LD_PLS, y_bf, 2000);
 % [y_LD_PLS2,gain_rmsLD_PLS2] = get_LD_PLS(K,M,X,x,hh,y_bf,S,lamda);

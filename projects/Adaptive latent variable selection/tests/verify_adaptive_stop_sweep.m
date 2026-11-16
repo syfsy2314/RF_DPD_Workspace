@@ -189,9 +189,11 @@ for ib = 1:numel(bandwidths)
     y_f = filter(h1, 1, y0);
     [y_f, ~, ~] = align_circular_signal(y_f, x);
     y_bf = filter(h2, 1, y_f);
-    [~, ~, coreO(ib)] = get_adaptive_LD_PLS( ...
-        K, M, X(train, :), x(train), h2, y_bf(train), 10, ...
-        thresholds(1), thresholds(2));
+    % 此脚本验证的是历史无惩罚轨迹；正式自适应入口已默认使用 mu=1。
+    H_x = filter(h2, 1, X);
+    [~, coreO(ib)] = get_energy_regularized_LD_PLS( ...
+        X(train, :), H_x(train, :), y_bf(train), 10, 0, ...
+        thresholds(1), thresholds(2), size(X, 2) - 1);
 end
 end
 
