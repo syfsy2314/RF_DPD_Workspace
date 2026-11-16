@@ -24,7 +24,7 @@ T_all = K*(M+1);                         % 42, 其中非线性列 41 个
 lamda = 10;
 nmse_O = zeros(1, T_all-1);              % O = 1..41
 for O = 1:T_all-1
-    y_o = get_OPLS(K, M, X, x, h, y_bf, O/T_all, lamda);
+    y_o = get_LD_PLS(K, M, X, x, h, y_bf, O/T_all, lamda);
     nmse_O(O) = get_NMSE(y_o, y0);
 end
 [~, O_best] = min(nmse_O);
@@ -36,7 +36,7 @@ lam_list = [0.1 1 10 100 1000];
 nmse_2d = zeros(T_all-1, numel(lam_list));
 for il = 1:numel(lam_list)
     for O = 1:T_all-1
-        y_o = get_OPLS(K, M, X, x, h, y_bf, O/T_all, lam_list(il));
+        y_o = get_LD_PLS(K, M, X, x, h, y_bf, O/T_all, lam_list(il));
         nmse_2d(O, il) = get_NMSE(y_o, y0);
     end
     fprintf('lamda=%g: 最优 O=%d, %.2f dB\n', lam_list(il), ...

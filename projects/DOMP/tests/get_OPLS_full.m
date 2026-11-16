@@ -3,7 +3,7 @@ function [Y_full, B_full] = get_OPLS_full(K, M, X, x, h, y_bf, lamda, O_max)
 %
 %   [Y_full, B_full] = get_OPLS_full(K, M, X, x, h, y_bf, lamda, O_max)
 %
-%   与 get_OPLS 逐 O 调用的结果严格一致(PLS 潜变量前缀嵌套:
+%   与 get_LD_PLS 逐 O 调用的结果严格一致(PLS 潜变量前缀嵌套:
 %   前 O 个潜变量与 O 的取值无关), 但潜变量提取只做一次,
 %   复杂度从 O(T^2) 次完整调用降为 1 次提取 + T 次轻量岭求解。
 %
@@ -30,7 +30,7 @@ Len = 1;
 x_lin = H_x(:, Len);
 X_nl_raw = H_x(:, (Len+1):end);
 
-%% 线性剥离(与 get_OPLS 相同)
+%% 线性剥离(与 get_LD_PLS 相同)
 w_lin = (x_lin' * x_lin) \ (x_lin' * y_bf);
 y_resid = y_bf - x_lin * w_lin;      % 剥离用带限线性输出(仅辨识域)
 
@@ -75,7 +75,7 @@ for O = 1:O_max
     B = R * C;
     B = B ./ sx * sy;                % 还原尺度(与 pls_B 一致)
     B_full(:, O) = B;
-    % 重建线性项必须用【全带】列 X(:,1) 乘 w_lin(与 get_OPLS 第33行一致),
+    % 重建线性项必须用【全带】列 X(:,1) 乘 w_lin(与 get_LD_PLS 一致),
     % 带限列只用于辨识域的剥离, 不能用于重建
     Y_full(:, O) = X_res * B + X(:,Len) * w_lin;
 end

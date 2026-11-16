@@ -66,11 +66,11 @@ for iRp = 1:nRp
     h_Ref = conv(h1, h2);
     linear_reference_Ref = filter(h_Ref, 1, x_al);
     [y_bf_Ref, ~, ~] = align_circular_signal(y_bf, linear_reference_Ref);
-    [y_Ref_raw, ~] = get_OPLS(K, M, X, x_al, h_Ref, y_bf_Ref, S, lamda);
+    [y_Ref_raw, ~] = get_LD_PLS(K, M, X, x_al, h_Ref, y_bf_Ref, S, lamda);
     [y_Ref, ~, ~] = align_circular_signal(y_Ref_raw, y0);
     NMSE_Ref(iRp) = get_NMSE(y_Ref, y0);
     % ---- Initial：传统覆盖（迭代 0 次） ----
-    [y_Initial, gain_rms_Initial] = get_OPLS(K, M, X, x_al, h2, y_bf, S, lamda);
+    [y_Initial, gain_rms_Initial] = get_LD_PLS(K, M, X, x_al, h2, y_bf, S, lamda);
     % ---- 一次结构化幅度自校准 ----
     [y_IterationResults, ~] = run_amplitude_alternating_iterations( ...
         iteration_count, y_Initial, gain_rms_Initial, y_bf, h2, ...

@@ -104,10 +104,10 @@ yFeedback = filter(h2, 1, yfAligned);
 reference = filter(hModel, 1, xAligned);
 [feedbackAligned, ~, ~] = align_circular_signal(yFeedback, reference);
 X = geth_even_1d(xAligned, K, M);
-yRecovered = get_OPLS(K, M, X, xAligned, hModel, feedbackAligned, S, lamda);
+yRecovered = get_LD_PLS(K, M, X, xAligned, hModel, feedbackAligned, S, lamda);
 ```
 
-修正发生在模型侧：真实测量为 `yFeedback=H2*H1*y`；设 PA 模型输出为 `yModel=X*theta`，LD-PLS 用 `H2*Hphase*X` 作为反馈域基函数，拟合与之对齐的 `yFeedback`。拟合出 theta 后，使用未经过反馈算子的 `X*theta` 得到全带输出。程序中的 `get_OPLS` 还执行线性分量剥离和 PLS 正则拟合。
+修正发生在模型侧：真实测量为 `yFeedback=H2*H1*y`；设 PA 模型输出为 `yModel=X*theta`，LD-PLS 用 `H2*Hphase*X` 作为反馈域基函数，拟合与之对齐的 `yFeedback`。拟合出 theta 后，使用未经过反馈算子的 `X*theta` 得到全带输出。程序中的 `get_LD_PLS` 还执行线性分量剥离和 PLS 正则拟合。
 
 这里相位响应使用正号 `exp(+1j*phiResidual)`，因为模型要重现 H1 对 PA 输出施加的相移。常相位与实现时延通过对齐处理，增益由拟合处理。本轮没有构造 H1 的幅度逆算子，也没有把测量反馈直接逆滤波；恢复性能取决于这个相位模型是否准确，以及 PA 基函数是否足够表达真实输出。
 

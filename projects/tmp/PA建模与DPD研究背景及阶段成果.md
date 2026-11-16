@@ -198,7 +198,7 @@ $$
 
 ## 资料依据
 
-- `projects/LD-PLS/main.m`、`projects/LD-PLS/PLS_Algorithms/get_OPLS.m`、`pls_B.m`：第三章实现与对照入口。
+- `projects/LD-PLS/main.m`、`projects/LD-PLS/PLS_Algorithms/get_LD_PLS.m`、`pls_B.m`：第三章实现与对照入口。
 - `projects/Alternating Iterations/README.md`：当前方法、参数和实验说明。
 - `projects/Alternating Iterations/doc/幅度自校准理论_统一符号与严格论证 (2).md`：理论分析及结论边界。
 - `projects/Alternating Iterations/results/result.md`：BW=80 MHz 纹波扫描数据。

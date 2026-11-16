@@ -148,7 +148,7 @@ end
 
 function nmseDb = recoverNmse(x, target, feedback, hModel, X, K, M, S, lamda, idx)
     [feedback, ~, ~] = align_circular_signal(feedback, filter(hModel, 1, x));
-    recovered = get_OPLS(K, M, X, x, hModel, feedback, S, lamda);
+    recovered = get_LD_PLS(K, M, X, x, hModel, feedback, S, lamda);
     [recovered, ~, ~] = align_circular_signal(recovered, target);
     nmseDb = get_NMSE(recovered(idx), target(idx));
 end

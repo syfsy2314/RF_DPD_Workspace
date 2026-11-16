@@ -82,7 +82,7 @@ fprintf('DOMP: 扫描定阶 n=%d -> 重建 %.2f dB\n', n_best, NESE_DOMP);
 %% OPLS
 % S = 0.3;
 % lamda = 10;
-% [y_LD_PLS,gain_rmsOPLS] = get_OPLS(K,M,X,x,h,y_bf,S,lamda);
+% [y_LD_PLS,gain_rmsOPLS] = get_LD_PLS(K,M,X,x,h,y_bf,S,lamda);
 % NESE_LD_PLS = get_NMSE(y_LD_PLS, y0);    
 % fprintf('NMSE_LD_PLS = %.2f dB\n', NESE_LD_PLS);
 % LD-PLS 扫描定阶(与 DOMP 扫描同口径): 扫 O 与 lamda, 判据为全带重建 NMSE
@@ -98,8 +98,8 @@ for il = 1:numel(lam_list)
         nmse_opls(O,il) = get_NMSE(Y_full(:,O), y0);
     end
     % if lam_list(il) == lamda
-    %     % 一致性检查: 增量版与 get_OPLS(固定规则) 在同 O 处应严格一致
-    %     fprintf('一致性检查(O=%d, 与get_OPLS最大偏差): %.2e\n', ...
+    %     % 一致性检查: 增量版与 get_LD_PLS(固定规则) 在同 O 处应严格一致
+    %     fprintf('一致性检查(O=%d, 与get_LD_PLS最大偏差): %.2e\n', ...
     %         round(S*T_all), max(abs(Y_full(:,round(S*T_all)) - y_LD_PLS)));
     % end
 end

@@ -73,14 +73,14 @@ lamda = 1;
 T_delta = 1e-4;
 kappa_G_max = 1e4;
 [y_Initial,~] = get_ALVS_LD_PLS(K,M,X,x,h,H2_FIR(y_f),S,lamda,T_delta,kappa_G_max);
-% [y_Initial,~] = get_OPLS(K,M,X,x,h,H2_FIR(y_f),S,lamda);
+% [y_Initial,~] = get_LD_PLS(K,M,X,x,h,H2_FIR(y_f),S,lamda);
 %% 信号恢复
 s = 2;
 % MG
 [y_MG,gain_rmsMG] = get_MG(K,M,s,x,h,y_bf);
 %%
 [y_LD_PLS,gain_rmsOPLS] = get_ALVS_LD_PLS(K,M,X,x,h,y_bf,S,lamda,T_delta,kappa_G_max);
-% [y_LD_PLS,~] = get_OPLS(K,M,X,x,h,y_bf,S,lamda);
+% [y_LD_PLS,~] = get_LD_PLS(K,M,X,x,h,y_bf,S,lamda);
 %% 
 fprintf('初始估计NMSE为 %.2f dB\n',get_NMSE(y_Initial,y0));
 fprintf('MG估计NMSE为 %.2f dB\n',get_NMSE(y_MG,y0));

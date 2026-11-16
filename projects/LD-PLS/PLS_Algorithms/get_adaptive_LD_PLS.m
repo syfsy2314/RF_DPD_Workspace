@@ -1,0 +1,65 @@
+function [y_LD_PLS, gain_rms, O] = get_adaptive_LD_PLS( ...
+    K, M, X, x, h, y_bf, lambda, T_delta, kappa_G_max)
+%GET_ADAPTIVE_LD_PLS Select the LD-PLS latent-variable count automatically.
+% T_delta = 0 disables the marginal-gain condition. The current candidate is
+% rejected when either active condition triggers; the first one is retained.
+
+H_x = geth_even_BLMP(x, K, M, h);
+xBandLinear = H_x(:, 1);
+wLinear = xBandLinear \ y_bf;
+bandYResidual = y_bf - xBandLinear * wLinear;
+
+pBand = xBandLinear \ H_x(:, 2:end);
+bandNonlinear = H_x(:, 2:end) - xBandLinear * pBand;
+scaleX = std(bandNonlinear);
+scaleY = std(bandYResidual);
+Z = (bandNonlinear - mean(bandNonlinear)) ./ scaleX;
+zY = (bandYResidual - mean(bandYResidual)) ./ scaleY;
+
+maxO = size(Z, 2);
+W = zeros(maxO);
+P = zeros(maxO);
+scores = zeros(size(Z, 1), maxO);
+ZResidual = Z;
+yResidual = zY;
+previousEnergy = real(yResidual' * yResidual);
+O = 0;
+
+for k = 1:maxO
+    w = ZResidual' * yResidual;
+    w = w / norm(w);
+    t = ZResidual * w;
+    p = ZResidual' * t / (t' * t);
+    q = yResidual' * t / (t' * t);
+    newYResidual = yResidual - t * q;
+    newEnergy = real(newYResidual' * newYResidual);
+    Delta_k = (previousEnergy - newEnergy) / (previousEnergy + eps);
+
+    candidateScores = [scores(:, 1:k-1), t];
+    kappa_G_k = cond(candidateScores' * candidateScores);
+    if k > 1 && (kappa_G_k >= kappa_G_max || ...
+            (T_delta > 0 && Delta_k <= T_delta))
+        break;
+    end
+
+    W(:, k) = w;
+    P(:, k) = p;
+    scores(:, k) = t;
+    ZResidual = ZResidual - t * p';
+    yResidual = newYResidual;
+    previousEnergy = newEnergy;
+    O = k;
+end
+
+W = W(:, 1:O);
+P = P(:, 1:O);
+R = W / (P' * W);
+T = Z * R;
+C = (T' * T + lambda * eye(O)) \ (T' * zY);
+B = (R * C) ./ scaleX' * scaleY;
+
+pFull = X(:, 1) \ X(:, 2:end);
+fullNonlinear = X(:, 2:end) - X(:, 1) * pFull;
+y_LD_PLS = fullNonlinear * B + X(:, 1) * wLinear;
+gain_rms = rms(y_LD_PLS) / rms(x);
+end

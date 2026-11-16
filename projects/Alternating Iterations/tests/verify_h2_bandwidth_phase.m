@@ -140,7 +140,7 @@ function results = verify_h2_bandwidth_phase(h1Mode)
         hOracle = conv(h1(:), h2(:));
         linearReference = filter(hOracle, 1, xAligned);
         [yfOracle, ~, refAlignment] = align_circular_signal(yf, linearReference);
-        [yOracle, ~] = get_OPLS(K, M, XAligned, xAligned, ...
+        [yOracle, ~] = get_LD_PLS(K, M, XAligned, xAligned, ...
             hOracle, yfOracle, S, lamda);
         oracle(j) = scoreMethod(yOracle, y0, yfOracle, hOracle, idx, refAlignment);
         if strcmp(h1Mode, 'phase_only')
@@ -319,7 +319,7 @@ function m = initMetrics(n)
 end
 
 function [m, yCover] = fitCover(x, X, y0, yf, h2, K, M, S, lamda, idx)
-    [yCover, ~] = get_OPLS(K, M, X, x, h2, yf, S, lamda);
+    [yCover, ~] = get_LD_PLS(K, M, X, x, h2, yf, S, lamda);
     m = scoreMethod(yCover, y0, yf, h2, idx, NaN);
 end
 
@@ -329,7 +329,7 @@ function [m, operatorFitDb] = fitCalibration( ...
         yCover, yf, h2, R, eta);
     linearReference = filter(hModel, 1, x);
     [yfAligned, ~, feedbackAlignment] = align_circular_signal(yf, linearReference);
-    [yCal, ~] = get_OPLS(K, M, X, x, hModel, yfAligned, S, lamda);
+    [yCal, ~] = get_LD_PLS(K, M, X, x, hModel, yfAligned, S, lamda);
     m = scoreMethod(yCal, y0, yfAligned, hModel, idx, feedbackAlignment);
 end
 

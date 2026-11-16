@@ -52,7 +52,7 @@ grid on;
 B_nodt = pls_B(H_x, y_bf, O, lamda);        % 不剥离，同样岭回归
 y_nodt = X * B_nodt;
 NESE_nodt = get_NMSE(y_nodt, y0);
-[y_dt, ~] = get_OPLS(K, M, X, x_al, h2, y_bf, S, lamda);
+[y_dt, ~] = get_LD_PLS(K, M, X, x_al, h2, y_bf, S, lamda);
 NESE_dt = get_NMSE(y_dt, y0);
 fprintf('================================================\n');
 fprintf('不剥离 PLS  : NMSE = %.2f dB\n', NESE_nodt);

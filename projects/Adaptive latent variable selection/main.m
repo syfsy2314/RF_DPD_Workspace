@@ -84,8 +84,8 @@ Kmax = O;                      %% 【修改】最大允许潜变量个数，而�
 X0 = X_nl_clean;
 Y0 = y_resid;
 %% ===================== 自适应停止参数 =====================
-T_delta = 9e-4;                %% 【新增】边际残差下降阈值，可调：1e-4 ~ 1e-2
-kappa_G_max = 1e3;               %% 【新增】潜变量矩阵条件数阈值，可调：1e3 ~ 1e6
+T_delta = 0;                  %% 关闭边际收益停止条件
+kappa_G_max = 1e4;           %% 原始 LD-PLS 三组带宽验证集选择的阈值
 A_min = 1;                     %% 【新增】至少保留的潜变量个数，防止过早停止
 %% ===================== 数据标准化 =====================
 N = size(X0,1);
@@ -148,14 +148,14 @@ for k = 1:Kmax
     kappa_G_k = cond(G_try);                %% 【修改】约束 H' * H 的条件数，更贴合后续求逆
     Kappa_list(k) = kappa_G_k;
     %% ---------- 7. 自适应停止准则 ----------
-    % 【新增】如果新增潜变量收益太小，或者潜变量矩阵过于病态，则停止
+    % 条件数超限时停止；T_delta > 0 时也检查边际收益
     % 注意：前 A_min 个潜变量强制保留，避免一开始就停止
     if k > A_min
         if kappa_G_k >= kappa_G_max %% 留的少
             stop_reason = 'Normal-equation matrix is ill-conditioned';
             break;
         end
-        if Delta_k <= T_delta %% 留的多
+        if T_delta > 0 && Delta_k <= T_delta
             stop_reason = 'Marginal residual gain is too small';
             break;
         end
@@ -219,7 +219,7 @@ gain_rmsOPLS = rms(y_OPLS)/rms(x);
 %%
 S = 0.25;
 lamda = 1;
-[y_LD_PLS_ref,gain_rms_LD_PLS_ref] = get_OPLS(K,M,X,x,h,y_bf,S,lamda);
+[y_LD_PLS_ref,gain_rms_LD_PLS_ref] = get_LD_PLS(K,M,X,x,h,y_bf,S,lamda);
 NESE_LD_PLS_ref = get_NMSE(y_LD_PLS_ref,y0);
 fprintf('最优潜变量数 A_ref = %d\n', round(S * 41));
 %%

@@ -2,7 +2,8 @@ function [y_ALVS, gain_rms, A] = get_ALVS_LD_PLS( ...
     K, M, X, x, h, y_bf, S, lamda, T_delta, kappa_G_max)
 %GET_ALVS_LD_PLS 自适应潜变量选择的 LD-PLS 模型。
 %   T_delta 控制新增潜变量的最小边际收益，kappa_G_max 控制潜变量
-%   Gram 矩阵的最大条件数。触发停止条件的当前潜变量不会被保留。
+%   Gram 矩阵的最大条件数。T_delta = 0 时关闭边际收益停止条件。
+%   任一条件触发时拒绝当前潜变量，至少保留第一个潜变量。
 
 H_x = geth_even_BLMP(x, K, M, h);
 
@@ -44,14 +45,15 @@ for k = 1:Kmax
     X_res_new = X_res - t * p';
     Y_res_new = Y_res - t * q;
     E_new = real(Y_res_new' * Y_res_new);
-    Delta_k = (E_prev - E_new) / E_prev;
+    Delta_k = (E_prev - E_new) / (E_prev + eps);
 
     Z_try = [Z_score(:, 1:k-1), t];
     kappa_G_k = cond(Z_try' * Z_try);
 
-        if kappa_G_k >= kappa_G_max && Delta_k <= T_delta
-            break;
-        end
+    if k > 1 && (kappa_G_k >= kappa_G_max || ...
+            (T_delta > 0 && Delta_k <= T_delta))
+        break;
+    end
 
     W(:, k) = w;
     P(:, k) = p;

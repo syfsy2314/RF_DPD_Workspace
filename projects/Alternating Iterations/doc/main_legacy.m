@@ -123,6 +123,6 @@ grid on;
 %%
 S = 0.1;
 lamda = 0.01;
-[y_OPLS,gain_rmsOPLS] = get_OPLS(K,M,X,x,h,y_bf,S,lamda);
+[y_OPLS,gain_rmsOPLS] = get_LD_PLS(K,M,X,x,h,y_bf,S,lamda);
 fprintf('第一次计算的NMSE = %.2f dB\n',get_NMSE(y_OPLS,y0));
 fprintf('===========================================================\n');

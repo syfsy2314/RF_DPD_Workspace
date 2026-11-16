@@ -44,7 +44,7 @@ a1_ref = 1e-4; a2_ref = 1e-5;
 pa2_ref = inv(HxHx + a1_ref*Lb + a2_ref*G_Lg_G) * Hxy;
 nmse_ref = get_NMSE(X*pa2_ref, y0);
 %% LD-PLS 基准（固定规则 S=0.3, lamda=10）
-[y_LDPLS, ~] = get_OPLS(K, M, X, x, h, y_bf, 0.3, 10);
+[y_LDPLS, ~] = get_LD_PLS(K, M, X, x, h, y_bf, 0.3, 10);
 nmse_ldpls = get_NMSE(y_LDPLS, y0);
 %% 二维对数网格扫描
 a1_list = 10.^(-10:1:2);

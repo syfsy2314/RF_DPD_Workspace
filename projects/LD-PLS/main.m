@@ -90,14 +90,14 @@ fprintf('SBL计算完成\n===================================================\n'
 %%
 S = 0.3;
 lamda = 10;
-[y_OPLS,gain_rmsOPLS] = get_OPLS(K,M,X,x,h,y_bf,S,lamda);
+[y_LD_PLS,gain_rmsLD_PLS] = get_LD_PLS(K,M,X,x,h,y_bf,S,lamda);
 fprintf('LD-PLS计算完成\n===================================================\n');
 % %% 第二次
-% hh = ls_filter_est(y_OPLS, y_bf, 2000);
-% [y_OPLS2,gain_rmsOPLS2] = get_OPLS(K,M,X,x,hh,y_bf,S,lamda);
+% hh = ls_filter_est(y_LD_PLS, y_bf, 2000);
+% [y_LD_PLS2,gain_rmsLD_PLS2] = get_LD_PLS(K,M,X,x,hh,y_bf,S,lamda);
 % %% 第三次
-% hhh = ls_filter_est(y_OPLS2, y_bf, 2000);
-% [y_OPLS3,gain_rmsOPLS3] = get_OPLS(K,M,X,x,hhh,y_bf,S,lamda);
+% hhh = ls_filter_est(y_LD_PLS2, y_bf, 2000);
+% [y_LD_PLS3,gain_rmsLD_PLS3] = get_LD_PLS(K,M,X,x,hhh,y_bf,S,lamda);
 %% 绘图
 figure(1);
 [p1, f1] = pwelch(y0/gain_rmspa, window, nfft/2, nfft ,fs);
@@ -106,7 +106,7 @@ hold on;
 [p4, f4] = pwelch(y_MG/gain_rmsMG, window, nfft/2, nfft ,fs);
 plot(f4 - 1/2 * fs, 10 * log10(fftshift(p4*100)), 'g-')
 hold on;
-[p4, f4] = pwelch(y_OPLS/gain_rmsOPLS, window, nfft/2, nfft ,fs);
+[p4, f4] = pwelch(y_LD_PLS/gain_rmsLD_PLS, window, nfft/2, nfft ,fs);
 plot(f4 - 1/2 * fs, 10 * log10(fftshift(p4*100)), 'm-')
 hold on;
 [p4, f4] = pwelch(y_MR/gain_rmsMR, window, nfft/2, nfft ,fs);
@@ -117,13 +117,13 @@ plot(f4 - 1/2 * fs, 10 * log10(fftshift(p4*100)), 'b-')
 hold on;
 xlabel('频率偏移 (MHz)');
 ylabel('功率谱密度 (dBm/Hz)');
-legend('PA输出信号','MG','OPLS','MR','SBL');
+legend('PA输出信号','MG','LD-PLS','MR','SBL');
 grid on;
 %% 指标
 NESE_MG = get_NMSE(y_MG,y0);
-NESE_LD_PLS = get_NMSE(y_OPLS,y0);
+NESE_LD_PLS = get_NMSE(y_LD_PLS,y0);
 NESE_MR = get_NMSE(y_MR,y0);
 NESE_SBL = get_NMSE(y_SBL,y0);
-% NESE_OPLS2 = get_nmse(y_OPLS2,y0);
-% NESE_OPLS3 = get_nmse(y_OPLS3,y0);
+% NESE_LD_PLS2 = get_nmse(y_LD_PLS2,y0);
+% NESE_LD_PLS3 = get_nmse(y_LD_PLS3,y0);
 
