@@ -35,7 +35,7 @@ Add MATLAB unit tests under each project's `tests/` directory, such as `projects
 
 ## Commit & Pull Request Guidelines
 
-No commit history is currently available, so use concise imperative messages, preferably scoped: `feat(ld-pls): add regularization sweep` or `fix(metrics): handle zero reference power`. Keep commits focused. Pull requests should describe the algorithmic change, MATLAB release and required toolboxes, data provenance, validation commands, and numerical before/after results. Include plots when signal behavior changes, but exclude generated figures and large datasets unless explicitly required.
+提交标题（主题行）和提交信息（正文）统一使用中文；代码标识符、文件路径和专有缩写可以保留原文。标题应简洁明确，例如 `新增：LD-PLS 正则化参数扫描` 或 `修复：参考功率为零时的 NMSE 计算`。每次提交保持聚焦。Pull requests should describe the algorithmic change, MATLAB release and required toolboxes, data provenance, validation commands, and numerical before/after results. Include plots when signal behavior changes, but exclude generated figures and large datasets unless explicitly required.
 
 ## Agent Connection Handling
 
