@@ -22,11 +22,14 @@ Alternating Iterations/
 ├── estimate_amplitude_operator.m   核心函数：实偶对称零相位幅度算子估计
 ├── run_amplitude_alternating_iterations.m  交替迭代驱动函数
 ├── tests/
-│   └── test_amplitude_alternating_iterations_mg.m   MG 对照的单次迭代测试
+│   ├── test_amplitude_alternating_iterations_mg.m   MG 对照的单次迭代测试
+│   ├── diag_low_ripple_score.m     上一轮固定潜变量数的 0.1 dB 点诊断
+│   └── diag_high_ripple_adaptive.m 自适应版 1.9 dB 点瓶颈诊断
 ├── results/
 │   ├── result.md                   纹波扫描结果汇总表（最终结果）
+│   ├── ripple_scan.mat             主实验保存的纹波扫描数组
 │   ├── NMSE_vs_ripple_BW80.png     纹波扫描 NMSE 曲线（BW=80）
-│   └── plot_NMSE.m                 结果绘图脚本
+│   └── plot_NMSE.m                 从 ripple_scan.mat 生成结果曲线
 ├── doc/
 │   ├── 幅度自校准理论_统一符号与严格论证 (2).md   理论主文档（命题 1–5）
 │   ├── amplitude_self_calibration_theory.md      理论早期版本
@@ -41,15 +44,15 @@ Alternating Iterations/
 
 | 组 | 覆盖算子 | 含义 |
 |---|---|---|
-| **Ref** | `conv(h1, h2)`（真实复合滤波器） | 性能上限（完美已知反馈链路） |
+| **Ref** | `conv(h1, h2)`（真实复合滤波器） | 已知反馈链路时的 LD-PLS 参照结果 |
 | **Initial** | 仅 `h2`（传统覆盖） | 未校准基线 = "迭代 0 次" |
 | **Iteration** | 一次自校准修正后的 `hModel` | 方法贡献 |
 
-输出：逐点打印、汇总表、NMSE-纹波三曲线图。数据路径：
+输出：逐点打印、汇总表、NMSE-纹波三曲线图，以及 `results/ripple_scan.mat`。数据从仓库根目录下读取：
 
 ```matlab
-D:\RF_DPD_Workspace\datasets\测试\2026.6.10\test1\x_v0.6_v1.mat
-D:\RF_DPD_Workspace\datasets\测试\2026.6.10\test1\y0_v0.6_v1.mat
+datasets/测试/2026.6.10/test1/x_v0.6_v1.mat
+datasets/测试/2026.6.10/test1/y0_v0.6_v1.mat
 ```
 
 ## 4. H1 的构造：固定阶数 + 通带纹波独立可调
@@ -84,16 +87,24 @@ function [hModel, hA, a, fitNmseDb] = ...
 ### `run_amplitude_alternating_iterations.m`（交替迭代驱动）
 
 ```matlab
-function [yResults, gainResults] = run_amplitude_alternating_iterations( ...
+function [yResults, gainResults, latentCounts] = run_amplitude_alternating_iterations( ...
     iterationCount, yInitial, gainInitial, yFeedback, h2, ...
-    x, K, M, X, S, lamda, operatorR, operatorEta)
+    x, K, M, X, lambda, T_delta, kappa_G_max, operatorR, operatorEta)
 ```
 
-外层交替：`θ̂^(i) → 估计幅度算子 → 更新 hModel → 反馈对齐 → LD-PLS 重辨识 θ̂^(i+1)`。输出矩阵第 1 列为初始结果，第 i+1 列为第 i 次迭代结果。
+外层交替：`θ̂^(i) → 估计幅度算子 → 更新 hModel → 反馈对齐 → 全带能量惩罚自适应 LD-PLS 重辨识 θ̂^(i+1)`。输出矩阵第 1 列为初始结果，第 i+1 列为第 i 次迭代结果；第三个输出 `latentCounts` 记录迭代重辨识的潜变量数。
 
 ### `tests/test_amplitude_alternating_iterations_mg.m`
 
 以 MG（`get_MG`）代替 LD-PLS 的单次交替测试，验证自校准框架对辨识器的无关性。⚠️ 数据路径仍指向旧机器（`C:\Users\admin\Desktop\测试\第四次\`），运行前需改为 `D:\RF_DPD_Workspace\datasets\...`。
+
+### `tests/diag_low_ripple_score.m`
+
+复现上一轮固定潜变量数的 0.1 dB 点，比较最终对齐、潜变量数、方向惩罚，以及用真实全带输出直接拟合的离线参照。运行 `r = diag_low_ripple_score()`。
+
+### `tests/diag_high_ripple_adaptive.m`
+
+复现自适应版 1.9 dB 点，比较继续迭代、幅度算子参数、LD-PLS 岭系数，以及用真实 PA 输出辅助估计算子的离线参照。运行 `r = diag_high_ripple_adaptive()`；数值和限制见 `results/result.md`。
 
 ### `doc/main_legacy.m`
 
@@ -104,17 +115,17 @@ function [yResults, gainResults] = run_amplitude_alternating_iterations( ...
 | 参数 | 当前值 | 含义 |
 |---|---|---|
 | `BW`, `Fs` | 80, 1000 | 采集带宽、采样率 |
-| `Rp_list` | `0.1:0.2:2` | H1 通带纹波扫描范围（dB） |
+| `Rp_list` | `0.1:0.5:6` | 主脚本当前的 H1 通带纹波扫描范围（dB） |
 | `nRipple` | 5 | 通带内波纹周期数 |
 | `N1` | firpmord 自动（约 815） | 平坦低通固定阶数 |
 | `operator_R` / `operator_eta` | 250 / 1e-4 | 幅度算子单边阶数 / 岭正则 |
 | `iteration_count` | 1 | 外层交替次数 |
-| `S`, `lamda` | 0.3, 1 | LD-PLS 潜变量比例与岭正则 |
+| `lambda`, `T_delta`, `kappa_G_max` | 10, 0, `10^4.5` | LD-PLS 岭正则、边际收益条件、得分矩阵条件数阈值 |
 | `K`, `M` | 7, 5 | MP 非线性阶数、记忆深度 |
 
 ## 7. 实验结果
 
-`results/result.md` 记录最终纹波扫描结果（BW=80，标称纹波 0.1–1.9 dB，步进 0.2 dB）。随反馈链路通带纹波从 0.1 dB 增大到 1.9 dB，传统覆盖（Initial）全带恢复 NMSE 由 -38.32 dB 退化至 -32.45 dB，而一次幅度自校准后仅由 -38.35 dB 降至 -36.18 dB，与性能上限 Ref（约 -38.45 dB）的差距由约 6.1 dB 收窄至约 2.3 dB，验证了幅度自校准的有效性。NMSE-纹波曲线见 `results/NMSE_vs_ripple_BW80.png`。
+`results/result.md` 记录最近一次全带能量惩罚自适应 LD-PLS 的纹波扫描结果，以及上一轮固定潜变量数结果供对比（BW=80，标称波纹 0.1–1.9 dB，步进 0.2 dB）。该轮 1.9 dB 点的 Initial 为 -35.34 dB，一次幅度自校准为 -36.28 dB，改善 0.94 dB；Ref 为 -38.56 dB。0.1 dB 点自校准比 Initial 差 0.16 dB。该轮数组和潜变量数保存在 `results/ripple_scan.mat`，曲线见 `results/NMSE_vs_ripple_BW80.png`；主脚本已设为更宽的扫描范围，尚未更新保存的结果。
 
 ## 8. 理论文档指引
 

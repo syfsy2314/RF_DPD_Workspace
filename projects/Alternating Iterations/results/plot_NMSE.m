@@ -2,12 +2,14 @@ clc;
 clear;
 close all;
 
-% BW=80 新 H1 构造下的纹波扫描结果（标称纹波 0.1–1.9 dB，步进 0.2 dB）
-Rp_dB = 0.1:0.2:1.9;   % dB
-
-NMSE_Ref           = [-38.47 -38.47 -38.47 -38.46 -38.46 -38.46 -38.46 -38.45 -38.45 -38.45];
-NMSE_Initial       = [-38.32 -37.86 -37.27 -36.60 -35.90 -35.19 -34.48 -33.78 -33.11 -32.45];
-NMSE_IterationFinal = [-38.35 -38.28 -38.15 -37.97 -37.74 -37.47 -37.18 -36.86 -36.52 -36.18];
+% 从主实验保存的数组绘图，避免图和数值报告使用不同轮次的结果。
+resultDir = fileparts(mfilename('fullpath'));
+data = load(fullfile(resultDir, 'ripple_scan.mat'), ...
+    'Rp_list', 'NMSE_Ref', 'NMSE_Init', 'NMSE_Iter');
+Rp_dB = data.Rp_list;
+NMSE_Ref = data.NMSE_Ref;
+NMSE_Initial = data.NMSE_Init;
+NMSE_IterationFinal = data.NMSE_Iter;
 
 figure;
 
@@ -28,5 +30,6 @@ set(gca, 'XTick', Rp_dB);
 set(gca, 'FontName', 'Times New Roman', 'FontSize', 12);
 set(gca, 'FontSize', 12, 'LineWidth', 1.1);
 
-% 保存曲线到 results/ 目录
-saveas(gcf, fullfile(fileparts(mfilename('fullpath')), 'NMSE_vs_ripple_BW80.png'));
+% 只导出坐标轴，避免把 MATLAB 图窗工具栏保存进结果图。
+exportgraphics(gca, fullfile(resultDir, 'NMSE_vs_ripple_BW80.png'), ...
+    'Resolution', 200);
