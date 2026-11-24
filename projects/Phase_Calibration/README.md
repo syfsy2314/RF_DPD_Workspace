@@ -8,11 +8,11 @@
 
 | 入口 | 用途 | 运行命令 |
 |---|---|---|
-| [main.m](main.m) | 保留的七组相位范围与 H2 带宽对照 | `run('projects/Phase_Calibration/main.m')` |
+| [main.m](main.m) | 开关 2 训练相位、模型侧补偿及九组 H2 带宽对照 | `run('projects/Phase_Calibration/main.m')` |
 | [verify_linear_backoff_phase.m](tests/verify_linear_backoff_phase.m) | 用 x_f=H1(x) 校准相位，检查去除 PA 相位后的恢复性能 | `r = verify_linear_backoff_phase();` |
 | [verify_input_feedback_phase.m](tests/verify_input_feedback_phase.m) | PA BLA 残余相位及 H1 相位估计误差归因 | `r = verify_input_feedback_phase();` |
 
-图均为独立、居中的 MATLAB figure，不保存 PNG 或 FIG。数值及报告写入对应的 `results/` 子目录。
+图均为独立的 MATLAB figure，不保存 PNG 或 FIG。数值及报告写入对应的 `results/` 子目录。
 
 ## 相位测量与测试手段
 
@@ -24,7 +24,7 @@
 |---|---|---|
 | x,y_f | PA BLA 与 H1 的级联相位 | 实际输入与反馈估计，可能混入 PA 自身残余相位 |
 | y,y_f | H1 相位 | 使用真实 PA 输出的离线参考 |
-| x,x_f | 理想线性 PA 条件下的 H1 相位 | 模拟校准记录；真实低功率 PA 仍可能有线性记忆相位 |
+| x,x_f | 开关 2 绕过 PA 后的 H1 相位 | 主程序的校准支路由 `x_f=H1(x)` 模拟；不是实际功率回退测量 |
 
 `verify_input_feedback_phase` 用 Welch 互谱作相位误差归因。`main` 和线性区实验中的 y,y_f 离线参考，则先拟合 2048 抽头完整复数 FIR（岭参数 1e-6），再由其频率响应提取相位。真实 H1 的 `freqz` 响应仅用于最终离线核对。
 
@@ -85,7 +85,7 @@ phiResidual = phi - A * (A \ phi);
 
 ### 相位测量频段与 H2 通带的区别
 
-相位测量范围由频点筛选决定；H2 是实际反馈与模型侧覆盖所用的滤波器。两者分别设置，H2 改为 45 MHz 不会自动把相位估计范围改成 ±45 MHz。当前主程序先在输入可靠的约 ±49 MHz 内估计相位，再比较 H2 ±45 MHz 和 ±80 MHz。
+相位测量范围由频点筛选决定；H2 是实际反馈与模型侧覆盖所用的滤波器。两者分别设置，H2 改为 44 MHz 不会自动把相位估计范围改成 ±44 MHz。当前主程序先在输入可靠的约 ±49 MHz 内估计相位，再比较 H2 ±44 MHz 和 ±80 MHz。
 
 相位曲线通过 4001 抽头 FIR 进入模型侧，并与 H2 卷积。局部相位在约 43.83–48.83 MHz 的边缘 5 MHz 内逐渐归零，所以“估计到 ±49 MHz”不等于在整个 ±49 MHz 内都完整修正。宽频离线参考在 ±80 MHz 内保持修正，80–85 MHz 归零。这是 H2 50 MHz 和 45 MHz 实验差异的关键。
 
@@ -114,9 +114,9 @@ yRecovered = get_LD_PLS(K, M, X, xAligned, hModel, feedbackAligned, S, lamda);
 ## 当前结论与设置
 
 - 实测记录 38,400 点，采样率 1 GHz；H1 为 85/90 MHz、0.1 dB 波纹的 13 阶椭圆 IIR。
-- x 的可靠频段约为 ±48.83 MHz；H2 当前比较 ±45 MHz 和 ±80 MHz 通带。
-- H2 45 MHz 下，x,y_f 相位校准的恢复 NMSE 为 −31.28 dB；理想线性区 x,x_f 校准为 −35.61 dB，接近 y,y_f 离线参考 −35.63 dB。
-- 恢复输出辅助迭代仅有小幅收益，已停止；其结果和 H2 50 MHz 历史对照保留在[理论与实验摘要](results/phase_experiment_summary.md)。
+- x 的可靠频段约为 ±48.83 MHz；当前主程序设置 H2 对照为 ±44 MHz 和 ±80 MHz，尚未复跑。
+- 上次 H2 45 MHz 的结果：x,y_f 相位校准的恢复 NMSE 为 −33.40 dB；开关 2 训练相位、模型侧补偿为 −36.12 dB，接近 y,y_f 离线参考 −36.14 dB。这些数值不能代表 H2 44 MHz。
+- 恢复输出辅助迭代仅有小幅收益，已停止；其旧版 LD-PLS 结果和 H2 50 MHz 历史对照保留在[理论与实验摘要](results/phase_experiment_summary.md)。
 
 ## 保留的辅助函数
 
