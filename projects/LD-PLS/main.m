@@ -96,6 +96,10 @@ T_delta = 0;
 kappa_G_max = 10^4.5;
 [y_LD_PLS,gain_rmsLD_PLS,O] = get_adaptive_LD_PLS( ...
     K,M,X,x,h,y_bf,lamda,T_delta,kappa_G_max);
+[hFullNoPenalty, O_no_penalty] = get_energy_regularized_LD_PLS( ...
+    X, H_x, y_bf, lamda, 0, T_delta, kappa_G_max, size(X, 2) - 1);
+y_LD_PLS_no_penalty = X * hFullNoPenalty;
+gain_rmsLD_PLS_no_penalty = rms(y_LD_PLS_no_penalty) / rms(x);
 fprintf('全带宽能量惩罚 LD-PLS 计算完成，O=%d\n===================================================\n', O);
 % 固定潜变量数时可设 S=0.3 并调用 get_LD_PLS(K,M,X,x,h,y_bf,S,lamda)。
 % %% 第二次
@@ -115,6 +119,9 @@ hold on;
 [p4, f4] = pwelch(y_LD_PLS/gain_rmsLD_PLS, window, nfft/2, nfft ,fs);
 plot(f4 - 1/2 * fs, 10 * log10(fftshift(p4*100)), 'm-')
 hold on;
+[p4, f4] = pwelch(y_LD_PLS_no_penalty / gain_rmsLD_PLS_no_penalty, window, nfft/2, nfft, fs);
+plot(f4 - 1/2 * fs, 10 * log10(fftshift(p4*100)), 'm--')
+hold on;
 [p4, f4] = pwelch(y_MR/gain_rmsMR, window, nfft/2, nfft ,fs);
 plot(f4 - 1/2 * fs, 10 * log10(fftshift(p4*100)), 'k-')
 hold on;
@@ -123,11 +130,12 @@ plot(f4 - 1/2 * fs, 10 * log10(fftshift(p4*100)), 'b-')
 hold on;
 xlabel('频率偏移 (MHz)');
 ylabel('功率谱密度 (dBm/Hz)');
-legend('PA输出信号','MG','LD-PLS','MR','SBL');
+legend('PA输出信号','MG','LD-PLS (\mu=1)','LD-PLS (\mu=0)','MR','SBL');
 grid on;
 %% 指标
 NESE_MG = get_NMSE(y_MG,y0);
 NESE_LD_PLS = get_NMSE(y_LD_PLS,y0);
+NESE_LD_PLS_no_penalty = get_NMSE(y_LD_PLS_no_penalty, y0);
 NESE_MR = get_NMSE(y_MR,y0);
 NESE_SBL = get_NMSE(y_SBL,y0);
 % NESE_LD_PLS2 = get_nmse(y_LD_PLS2,y0);
