@@ -6,7 +6,7 @@ fs = 1000;
 nfft = 1024;
 window=hann(nfft);
 %% 第一个FIR滤波器
-BW = 50;
+BW = 91;
 %UNTITLED 返回离散时间滤波器对象。
 Fs = 1000;  % Sampling Frequency
 Fpass = BW+5;              % Passband Frequency
@@ -37,10 +37,13 @@ H2_FIR = dsp.FIRFilter( ...
 h2 =  H2_FIR.Numerator;
 %% 导入数据
 projectDir = fileparts(mfilename('fullpath'));
-dataX = load(fullfile(projectDir, 'data', 'x.mat'), 'x');
-dataY = load(fullfile(projectDir, 'data', 'y0.mat'), 'y0');
-x = dataX.x;
-y0 = dataY.y0;
+datasetsDir = fullfile(fileparts(fileparts(projectDir)), 'datasets');
+test2Dir = fullfile(datasetsDir, '测试', '2026.11.24', 'test2');
+dataY = load(fullfile(test2Dir, 'y0.mat'), 'y0');
+y0 = dataY.y0(:);
+[~, ~, x] = import_iq_binary(fullfile(datasetsDir, 'data_38400_v0.6_test1.dat'), numel(y0));
+assert(numel(x) == numel(y0), 'test2 输入与参考输出的样点数必须一致。');
+x = x / max(abs(x));
 gain_rmspa = rms(y0)/rms(x);
 N = length(x);
 %% 模拟带限滤波器
@@ -64,19 +67,20 @@ X = geth_even_1d(x,K,M);
 % NESE_BLMP = get_NMSE(y_BLMP,y0);
 %=================================
 %% MG
-s = 2;
+s = 3;
 % MG
 [y_MG,gain_rmsMG] = get_MG(K,M,s,x,h,y_bf);
+fprintf('MG                         %8.3f dB\n', get_NMSE(y_MG, y0));
 fprintf('MG计算完成\n===================================================\n');
 %% MR
 Kb = 2;
 nb = 0.2;
-a1 = 0.0001;
+a1 = 1e-4;
 Lb = get_Lb(H_x,Kb,nb);
 %
 Kg = 20;
 ng = 0.2;
-a2 = 0.00001;
+a2 = 0.000000001;
 g = 1000;
 G = H_x(1:g,:);
 Lg = get_Lg(G,Kg,ng);
@@ -85,6 +89,7 @@ a3 = 0.1;
 %
 pa2= inv(ctranspose(H_x) * H_x + a1 * Lb + a2 * G' * Lg * G) * ctranspose(H_x) * y_bf;
 y_MR = X * pa2;
+fprintf('MR                         %8.3f dB\n', get_NMSE(y_MR, y0));
 fprintf('MR计算完成\n===================================================\n');
 gain_rmsMR = rms(y_MR)/rms(x);
 %% SBL
@@ -108,6 +113,13 @@ fprintf('全带宽能量惩罚 LD-PLS 计算完成，O=%d\n=====================
 % %% 第三次
 % hhh = ls_filter_est(y_LD_PLS2, y_bf, 2000);
 % [y_LD_PLS3,gain_rmsLD_PLS3] = get_LD_PLS(K,M,X,x,hhh,y_bf,S,lamda);
+%% 全带 NMSE
+fprintf('\n全带 NMSE（观测半带宽 %g MHz）\n', BW);
+
+fprintf('有全带惩罚 LD-PLS          %8.3f dB\n', get_NMSE(y_LD_PLS, y0));
+fprintf('无全带惩罚 LD-PLS          %8.3f dB\n', get_NMSE(y_LD_PLS_no_penalty, y0));
+
+fprintf('SBL                        %8.3f dB\n', get_NMSE(y_SBL, y0));
 %% 绘图
 figure(1);
 [p1, f1] = pwelch(y0/gain_rmspa, window, nfft/2, nfft ,fs);
@@ -132,12 +144,4 @@ xlabel('频率偏移 (MHz)');
 ylabel('功率谱密度 (dBm/Hz)');
 legend('PA输出信号','MG','LD-PLS (\mu=1)','LD-PLS (\mu=0)','MR','SBL');
 grid on;
-%% 指标
-NESE_MG = get_NMSE(y_MG,y0);
-NESE_LD_PLS = get_NMSE(y_LD_PLS,y0);
-NESE_LD_PLS_no_penalty = get_NMSE(y_LD_PLS_no_penalty, y0);
-NESE_MR = get_NMSE(y_MR,y0);
-NESE_SBL = get_NMSE(y_SBL,y0);
-% NESE_LD_PLS2 = get_nmse(y_LD_PLS2,y0);
-% NESE_LD_PLS3 = get_nmse(y_LD_PLS3,y0);
 
